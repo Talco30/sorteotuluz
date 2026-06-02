@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title id="page-title">Sistema de Sorteos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#534AB7;--purple-dark:#3C3489;--purple-light:#EEEDFE;--purple-mid:#AFA9EC;
+  --teal:#1D9E75;--teal-light:#E1F5EE;--teal-mid:#5DCAA5;
+  --red-light:#FCEBEB;--red:#A32D2D;--red-mid:#F09595;
+  --amber:#BA7517;--amber-light:#FAEEDA;--amber-mid:#FAC775;
+  --gray-50:#F8F7F4;--gray-100:#F1EFE8;--gray-200:#D3D1C7;--gray-400:#888780;--gray-600:#5F5E5A;
+  --text:#1a1a1a;--text-muted:#666;--bg:#FAFAF8;--white:#fff;
+  --radius:10px;--radius-lg:16px;
+  --shadow:0 2px 12px rgba(0,0,0,0.07);
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+h1,h2,h3{font-family:var(--font-head)}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--purple);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(83,74,183,0.3)}
+.topbar-title{font-family:var(--font-head);font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.topbar-sub{font-size:12px;opacity:0.75;margin-top:1px}
+.topbar-nav{display:flex;gap:5px;flex-wrap:wrap}
+.nav-btn{padding:7px 12px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.12);color:#fff;border:none;transition:all 0.15s;font-family:var(--font-head)}
+.nav-btn:hover{background:rgba(255,255,255,0.22)}
+.nav-btn.active{background:#fff;color:var(--purple)}
+
+/* ── LAYOUT ── */
+.content{padding:20px;max-width:960px;margin:0 auto}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px}
+.stat{background:var(--white);border-radius:var(--radius);padding:13px 15px;border:1px solid var(--gray-200);box-shadow:var(--shadow)}
+.stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500}
+.stat-val{font-family:var(--font-head);font-size:24px;font-weight:700;margin-top:3px}
+
+/* ── CARD ── */
+.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--gray-200);padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--purple-light);flex-shrink:0}
+
+/* ── LEGEND ── */
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)}
+.dot{width:13px;height:13px;border-radius:4px;border:1px solid}
+
+/* ── GRID ── */
+.grid-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:5px;margin-bottom:14px;max-height:380px;overflow-y:auto;padding:2px}
+.boleto{aspect-ratio:1;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--gray-200);display:flex;align-items:center;justify-content:center;transition:all 0.12s;background:var(--white);color:var(--text);font-family:var(--font-head)}
+.boleto:hover:not(.vendido):not(.bloqueado):not(.seleccionado){background:var(--purple-light);border-color:var(--purple-mid);color:var(--purple-dark);transform:scale(1.08)}
+.boleto.vendido{background:var(--teal-light);border-color:var(--teal-mid);color:#085041;cursor:default}
+.boleto.bloqueado{background:var(--gray-100);border-color:var(--gray-200);color:var(--gray-400);cursor:not-allowed;opacity:0.5}
+.boleto.seleccionado{background:var(--purple);border-color:var(--purple-dark);color:#fff;transform:scale(1.1);box-shadow:0 0 0 3px rgba(83,74,183,0.25)}
+.boleto.ganador{background:linear-gradient(135deg,#f6c90e,#f0a500);border-color:#c87800;color:#3D2000;cursor:default;box-shadow:0 0 8px rgba(240,165,0,0.5)}
+.grid-wrap::-webkit-scrollbar{width:5px}
+.grid-wrap::-webkit-scrollbar-track{background:var(--gray-100);border-radius:5px}
+.grid-wrap::-webkit-scrollbar-thumb{background:var(--gray-200);border-radius:5px}
+
+/* ── RANDOM ── */
+.random-sec{background:var(--gray-50);border-radius:var(--radius);padding:12px 14px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.random-sec span{font-size:13px;color:var(--text-muted)}
+
+/* ── FORM ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.full{grid-template-columns:1fr}
+.form-row.triple{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:580px){.form-row,.form-row.triple{grid-template-columns:1fr}}
+label{font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);background:var(--white);color:var(--text);font-size:14px;font-family:var(--font-body);transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 3px rgba(83,74,183,0.1)}
+
+/* ── BOTONES ── */
+.btn{padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all 0.15s;font-family:var(--font-head)}
+.btn-primary{background:var(--purple);color:#fff}
+.btn-primary:hover{background:var(--purple-dark);transform:translateY(-1px)}
+.btn-secondary{background:var(--white);color:var(--text);border:1.5px solid var(--gray-200)}
+.btn-secondary:hover{background:var(--gray-50)}
+.btn-danger{background:var(--white);color:var(--red);border:1.5px solid var(--red-mid)}
+.btn-danger:hover{background:var(--red-light)}
+.btn-success{background:var(--teal);color:#fff}
+.btn-success:hover{background:#157a5a}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* ── ALERTS ── */
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:10px;font-weight:500}
+.alert-ok{background:var(--teal-light);color:#085041;border:1px solid var(--teal-mid)}
+.alert-err{background:var(--red-light);color:var(--red);border:1px solid var(--red-mid)}
+.alert-info{background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--purple-mid)}
+.alert-warn{background:var(--amber-light);color:#633806;border:1px solid var(--amber-mid)}
+
+/* ── BADGE ── */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--font-head)}
+.badge-verde{background:var(--teal-light);color:#085041}
+.badge-gris{background:var(--gray-100);color:var(--gray-600)}
+.badge-morado{background:var(--purple-light);color:var(--purple-dark)}
+.badge-rojo{background:var(--red-light);color:var(--red)}
+.badge-amarillo{background:#FEF9C3;color:#713F12}
+.badge-dorado{background:linear-gradient(135deg,#f6c90e,#f0a500);color:#3D2000}
+
+/* ── TABLA ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1.5px solid var(--gray-200);font-family:var(--font-head)}
+td{padding:9px 10px;border-bottom:1px solid var(--gray-100);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray-50)}
+.sep{height:1px;background:var(--gray-100);margin:16px 0}
+
+/* ══════════════════════════════════════════
+   BILLETE DE LOTERÍA
+══════════════════════════════════════════ */
+.billete-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.billete-wrap{background:var(--white);border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.25);overflow:hidden;animation:slideUp 0.35s ease}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.billete-header{background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:#fff;padding:20px 24px 16px;text-align:center;position:relative}
+.billete-header-title{font-family:var(--font-head);font-size:20px;font-weight:800;letter-spacing:-0.02em}
+.billete-header-sub{font-size:12px;opacity:0.8;margin-top:4px}
+.billete-numero-grande{font-family:var(--font-head);font-size:52px;font-weight:800;letter-spacing:-0.03em;line-height:1;margin:12px 0 4px}
+.billete-body{padding:20px 24px}
+.billete-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--gray-200)}
+.billete-row:last-child{border-bottom:none}
+.billete-row-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)}
+.billete-row-val{font-family:var(--font-head);font-size:14px;font-weight:700;text-align:right;max-width:65%}
+.billete-nums{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.billete-num{width:32px;height:32px;border-radius:8px;background:var(--purple-light);color:var(--purple-dark);font-family:var(--font-head);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.billete-num.ganador-num{background:linear-gradient(135deg,#f6c90e,#f0a500);color:#3D2000}
+.billete-footer{padding:14px 24px 20px;text-align:center;border-top:1px dashed var(--gray-200)}
+.billete-status-pagado{background:var(--teal-light);color:#085041;border:1px solid var(--teal-mid);border-radius:var(--radius);padding:8px 16px;font-family:var(--font-head);font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.billete-status-pendiente{background:var(--amber-light);color:#633806;border:1px solid var(--amber-mid);border-radius:var(--radius);padding:8px 16px;font-family:var(--font-head);font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.billete-status-ganador{background:linear-gradient(135deg,#f6c90e,#f0a500);color:#3D2000;border-radius:var(--radius);padding:10px 20px;font-family:var(--font-head);font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(240,165,0,0.4);margin-top:8px}
+.billete-comprobante{margin-top:12px}
+.billete-comprobante img{width:100%;border-radius:var(--radius);border:1px solid var(--gray-200);max-height:180px;object-fit:contain}
+.billete-close{position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.billete-close:hover{background:rgba(255,255,255,0.35)}
+.billete-actions{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+
+/* ══════════════════════════════════════════
+   BUSCAR NÚMERO
+══════════════════════════════════════════ */
+.buscar-wrap{display:flex;gap:8px;align-items:flex-end;margin-bottom:4px}
+.buscar-wrap input{flex:1}
+
+/* ══════════════════════════════════════════
+   PAGOS
+══════════════════════════════════════════ */
+.pago-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.pago-tab{padding:8px 14px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-200);background:var(--white);color:var(--text-muted);font-family:var(--font-head);transition:all 0.15s}
+.pago-tab.active{border-color:var(--purple);background:var(--purple-light);color:var(--purple-dark)}
+.pago-panel{display:none}
+.pago-panel.active{display:block}
+.transferencia-datos{background:var(--gray-50);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--gray-200)}
+.transferencia-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-200);font-size:13px}
+.transferencia-row:last-child{border-bottom:none}
+.transferencia-key{color:var(--text-muted);font-weight:500}
+.transferencia-val{font-family:var(--font-head);font-weight:700}
+.mp-btn{display:inline-flex;align-items:center;gap:8px;background:#009ee3;color:#fff;padding:10px 20px;border-radius:var(--radius);font-weight:700;font-size:14px;cursor:pointer;border:none;font-family:var(--font-head);transition:background 0.15s;text-decoration:none}
+.mp-btn:hover{background:#007bb5}
+.pp-btn{display:inline-flex;align-items:center;gap:8px;background:#003087;color:#fff;padding:10px 20px;border-radius:var(--radius);font-weight:700;font-size:14px;cursor:pointer;border:none;font-family:var(--font-head);transition:background 0.15s;text-decoration:none}
+.pp-btn:hover{background:#001f5b}
+.pago-logo{font-size:18px}
+
+/* ── ADMIN LOGIN ── */
+.login-wrap{max-width:360px;margin:48px auto}
+
+/* ── COMPROBANTE PREVIEW ── */
+.comprobante-preview{width:100%;max-height:180px;object-fit:contain;border-radius:var(--radius);border:1px solid var(--gray-200);margin-top:8px;display:none}
+
+/* ── SORTEO RESULT ── */
+.ganadores-lista{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.gan-num{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#f6c90e,#f0a500);color:#3D2000;font-family:var(--font-head);font-size:16px;font-weight:800;box-shadow:0 3px 10px rgba(240,165,0,0.35)}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title" id="sorteo-nombre">Sorteo Demo</div>
+    <div class="topbar-sub" id="sorteo-sub">$100 por boleto · 15 números por boleto</div>
+  </div>
+  <div class="topbar-nav">
+    <button class="nav-btn active" onclick="showPage('publico')">🎟 Boletos</button>
+    <button class="nav-btn" onclick="showPage('buscar')">🔍 Mi boleto</button>
+    <button class="nav-btn" onclick="showPage('admin')">⚙️ Admin</button>
+  </div>
+</div>
+
+<!-- ══════════════════ BILLETE MODAL ══════════════════ -->
+<div class="billete-overlay" id="billete-modal" style="display:none" onclick="cerrarBillete(event)">
+  <div class="billete-wrap" id="billete-inner">
+    <div class="billete-header">
+      <button class="billete-close" onclick="cerrarBilleteDirecto()">✕</button>
+      <div class="billete-header-title" id="blt-sorteo-nombre">SORTEO DEMO</div>
+      <div class="billete-header-sub" id="blt-header-sub">Comprobante de participación</div>
+      <div class="billete-numero-grande" id="blt-num-grande">042</div>
+    </div>
+    <div class="billete-body">
+      <div class="billete-row">
+        <span class="billete-row-label">Números asignados</span>
+        <div class="billete-nums" id="blt-nums"></div>
+      </div>
+      <div class="billete-row">
+        <span class="billete-row-label">Participante</span>
+        <span class="billete-row-val" id="blt-nombre"></span>
+      </div>
+      <div class="billete-row">
+        <span class="billete-row-label">Total pagado</span>
+        <span class="billete-row-val" id="blt-total"></span>
+      </div>
+      <div class="billete-row">
+        <span class="billete-row-label">Fecha de compra</span>
+        <span class="billete-row-val" id="blt-fecha"></span>
+      </div>
+      <div class="billete-row">
+        <span class="billete-row-label">Fecha del sorteo</span>
+        <span class="billete-row-val" id="blt-fecha-sorteo"></span>
+      </div>
+    </div>
+    <div class="billete-footer">
+      <div id="blt-status-pago"></div>
+      <div id="blt-status-ganador"></div>
+      <div class="billete-comprobante" id="blt-comprobante-wrap" style="display:none">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px">Comprobante de pago</div>
+        <img id="blt-comprobante-img" src="" alt="Comprobante">
+      </div>
+      <div class="billete-actions">
+        <button class="btn btn-secondary btn-sm" onclick="imprimirBillete()">🖨️ Imprimir</button>
+        <button class="btn btn-secondary btn-sm" onclick="cerrarBilleteDirecto()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA PÚBLICA ══════════════════ -->
+<div class="content" id="page-publico">
+  <div class="stats-row" id="stats-publico"></div>
+
+  <div class="card">
+    <div class="card-title"><div class="card-icon">🎯</div>Elige tu boleto</div>
+    <div class="legend">
+      <div class="legend-item"><div class="dot" style="background:#E1F5EE;border-color:#5DCAA5"></div>Vendido</div>
+      <div class="legend-item"><div class="dot" style="background:#F1EFE8;border-color:#B4B2A9"></div>No disponible</div>
+      <div class="legend-item"><div class="dot" style="background:#EEEDFE;border-color:#534AB7"></div>Seleccionado</div>
+      <div class="legend-item"><div class="dot" style="background:#fff;border-color:#D3D1C7"></div>Disponible</div>
+    </div>
+    <div class="grid-wrap" id="grid-boletos"></div>
+    <div class="random-sec">
+      <span>¿No sabes cuál elegir?</span>
+      <button class="btn btn-secondary btn-sm" onclick="elegirAleatorio()">🎲 Número al azar</button>
+    </div>
+  </div>
+
+  <!-- FORM DATOS -->
+  <div class="card" id="form-compra" style="display:none">
+    <div class="card-title"><div class="card-icon">👤</div>Datos del participante</div>
+    <div id="numeros-asignados"></div>
+    <div class="form-row">
+      <div><label>Nombre completo</label><input type="text" id="inp-nombre" placeholder="Juan Pérez"></div>
+      <div><label>Teléfono / WhatsApp</label><input type="tel" id="inp-tel" placeholder="81 1234 5678"></div>
+    </div>
+    <div class="form-row full">
+      <div><label>Correo electrónico (opcional)</label><input type="email" id="inp-email" placeholder="juan@correo.com"></div>
+    </div>
+    <div id="alert-compra"></div>
+
+    <!-- PAGO -->
+    <div class="sep"></div>
+    <div class="card-title" style="margin-bottom:12px"><div class="card-icon">💳</div>Método de pago</div>
+    <div class="pago-tabs">
+      <button class="pago-tab active" onclick="selectPagoTab('transferencia',this)">🏦 Transferencia</button>
+      <button class="pago-tab" onclick="selectPagoTab('mercadopago',this)">💙 Mercado Pago</button>
+      <button class="pago-tab" onclick="selectPagoTab('paypal',this)">🔵 PayPal</button>
+    </div>
+
+    <div class="pago-panel active" id="pago-transferencia">
+      <div class="transferencia-datos" id="transferencia-info">
+        <div class="transferencia-row"><span class="transferencia-key">Banco</span><span class="transferencia-val" id="tf-banco">—</span></div>
+        <div class="transferencia-row"><span class="transferencia-key">CLABE</span><span class="transferencia-val" id="tf-clabe">—</span></div>
+        <div class="transferencia-row"><span class="transferencia-key">Titular</span><span class="transferencia-val" id="tf-titular">—</span></div>
+        <div class="transferencia-row"><span class="transferencia-key">Monto a pagar</span><span class="transferencia-val" id="tf-monto" style="color:var(--purple)">—</span></div>
+      </div>
+      <div style="margin-top:10px" class="alert alert-warn">⚠️ Tu boleto quedará como <strong>pendiente de pago</strong> hasta que el administrador confirme la transferencia.</div>
+    </div>
+
+    <div class="pago-panel" id="pago-mercadopago">
+      <div style="text-align:center;padding:16px 0">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Paga de forma segura con Mercado Pago. Al hacer clic serás redirigido.</p>
+        <a id="mp-link" href="#" target="_blank" class="mp-btn" onclick="registrarPagoMP()">
+          <span class="pago-logo">💙</span> Pagar con Mercado Pago
+        </a>
+        <div style="margin-top:10px" class="alert alert-info">ℹ️ Tu boleto se registrará como pendiente hasta confirmar el pago.</div>
+      </div>
+    </div>
+
+    <div class="pago-panel" id="pago-paypal">
+      <div style="text-align:center;padding:16px 0">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Paga de forma segura con PayPal. Al hacer clic serás redirigido.</p>
+        <a id="pp-link" href="#" target="_blank" class="pp-btn" onclick="registrarPagoPP()">
+          <span class="pago-logo">🔵</span> Pagar con PayPal
+        </a>
+        <div style="margin-top:10px" class="alert alert-info">ℹ️ Tu boleto se registrará como pendiente hasta confirmar el pago.</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="confirmarCompra()">✓ Registrar boleto</button>
+      <button class="btn btn-secondary" onclick="cancelarSeleccion()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA BUSCAR ══════════════════ -->
+<div class="content" id="page-buscar" style="display:none">
+  <div class="card">
+    <div class="card-title"><div class="card-icon">🔍</div>Consultar mi boleto</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Ingresa el número de boleto o el número del sorteo para ver el estado de tu participación.</p>
+    <div class="buscar-wrap">
+      <input type="text" id="inp-buscar" placeholder="Ej. 042" onkeydown="if(event.key==='Enter')buscarBoleto()">
+      <button class="btn btn-primary" onclick="buscarBoleto()">Buscar</button>
+    </div>
+    <div id="alert-buscar" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ PÁGINA ADMIN ══════════════════ -->
+<div class="content" id="page-admin" style="display:none">
+  <div id="admin-login" class="login-wrap">
+    <div class="card">
+      <div class="card-title"><div class="card-icon">🔒</div>Acceso administrador</div>
+      <label>Contraseña</label>
+      <input type="password" id="inp-pass" placeholder="••••••" onkeydown="if(event.key==='Enter')loginAdmin()">
+      <div id="alert-login" style="margin-top:8px"></div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="loginAdmin()">Entrar</button></div>
+    </div>
+  </div>
+
+  <div id="admin-panel" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-family:var(--font-head);font-size:18px;font-weight:800">Panel administrador</h2>
+      <button class="btn btn-secondary btn-sm" onclick="logoutAdmin()">← Salir</button>
+    </div>
+    <div class="stats-row" id="stats-admin"></div>
+
+    <!-- AJUSTES -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon">⚙️</div>Ajustes del sorteo</div>
+      <div class="form-row">
+        <div><label>Nombre del sorteo</label><input type="text" id="cfg-nombre" placeholder="Mi sorteo"></div>
+        <div><label>Precio por boleto ($)</label><input type="number" id="cfg-precio" min="1"></div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Dígitos del número (rango)</label>
+          <select id="cfg-digitos">
+            <option value="1">1 dígito → 0–9 (10 boletos)</option>
+            <option value="2">2 dígitos → 00–99 (100 boletos)</option>
+            <option value="3" selected>3 dígitos → 000–999 (1,000)</option>
+            <option value="4">4 dígitos → 0000–9999 (10,000)</option>
+            <option value="5">5 dígitos → 00000–99999 (100,000)</option>
+          </select>
+        </div>
+        <div><label>Números del sorteo por boleto</label><input type="number" id="cfg-nums-por-boleto" min="1" max="100" value="1"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Fecha tentativa del sorteo</label><input type="date" id="cfg-fecha-sorteo"></div>
+        <div><label>Nota sobre fecha (ej. "sujeto a venta total")</label><input type="text" id="cfg-nota-fecha" placeholder="Sujeto a completar venta"></div>
+      </div>
+      <div class="sep"></div>
+      <div style="font-size:13px;font-weight:700;font-family:var(--font-head);margin-bottom:10px;color:var(--text-muted)">DATOS DE TRANSFERENCIA</div>
+      <div class="form-row triple">
+        <div><label>Banco</label><input type="text" id="cfg-banco" placeholder="BBVA, HSBC..."></div>
+        <div><label>CLABE / Cuenta</label><input type="text" id="cfg-clabe" placeholder="0000 0000 0000 0000"></div>
+        <div><label>Titular</label><input type="text" id="cfg-titular" placeholder="Nombre del titular"></div>
+      </div>
+      <div class="sep"></div>
+      <div style="font-size:13px;font-weight:700;font-family:var(--font-head);margin-bottom:10px;color:var(--text-muted)">LINKS DE PAGO</div>
+      <div class="form-row">
+        <div><label>Link Mercado Pago</label><input type="text" id="cfg-mp-link" placeholder="https://link.mercadopago.com.mx/..."></div>
+        <div><label>Link PayPal.me</label><input type="text" id="cfg-pp-link" placeholder="https://paypal.me/..."></div>
+      </div>
+      <div class="sep"></div>
+      <div class="form-row">
+        <div><label>URL Google Apps Script (Sheets)</label><input type="text" id="cfg-sheets-url" placeholder="https://script.google.com/macros/s/..."></div>
+        <div><label>Nueva contraseña admin (dejar vacío = no cambiar)</label><input type="password" id="cfg-pass-nueva" placeholder="••••••"></div>
+      </div>
+      <div id="alert-cfg"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="guardarConfig()">💾 Guardar ajustes</button>
+        <button class="btn btn-secondary" onclick="probarSheets()">🔗 Probar Sheets</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="reiniciarTodo()">⚠️ Reiniciar todo</button>
+      </div>
+    </div>
+
+    <!-- RESULTADO DEL SORTEO -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon">🏆</div>Resultado del sorteo</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Ingresa los números ganadores. Los boletos que contengan estos números se marcarán como ganadores.</p>
+      <div class="form-row">
+        <div><label>Números ganadores (separados por coma)</label><input type="text" id="cfg-ganadores" placeholder="Ej. 042, 317, 956"></div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-success" onclick="guardarGanadores()">🏆 Publicar resultado</button>
+        </div>
+      </div>
+      <div id="alert-ganadores"></div>
+      <div class="ganadores-lista" id="ganadores-lista"></div>
+    </div>
+
+    <!-- BLOQUEOS -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon">🚫</div>Gestionar disponibilidad</div>
+      <div class="form-row">
+        <div><label>Número de boleto</label><input type="text" id="inp-bloqueo-num" placeholder="Ej. 042"></div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn btn-danger" onclick="bloquearBoleto()">🔒 Bloquear</button>
+          <button class="btn btn-secondary" onclick="desbloquearBoleto()">🔓 Restaurar</button>
+        </div>
+      </div>
+      <div id="alert-bloqueo"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:10px">Bloqueados (<span id="count-bloqueados">0</span>):</div>
+      <div id="lista-bloqueados" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px"></div>
+    </div>
+
+    <!-- VENTAS -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon">📋</div>Boletos vendidos</div>
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="btn btn-secondary btn-sm" onclick="exportarCSV()">⬇️ Exportar CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Boleto</th><th>Números</th><th>Nombre</th><th>Teléfono</th><th>Pago</th><th>Ganador</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-vendidos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SHEETS STATUS -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon">📊</div>Estado Google Sheets</div>
+      <div id="sheets-status"><p style="font-size:13px;color:var(--text-muted)">Configura la URL del webhook para sincronizar ventas.</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  ESTADO
+// ══════════════════════════════════════════
+let PASS_ADMIN = "admin123";
+let cfg = {
+  nombre:"Sorteo Demo", precio:100, digitos:3, numsPorBoleto:1,
+  sheetsUrl:"", banco:"", clabe:"", titular:"", mpLink:"", ppLink:"",
+  fechaSorteo:"", notaFecha:"Sujeto a completar venta",
+  ganadores:[]
+};
+let boletos = {};
+let bloqueados = new Set();
+let seleccionado = null;
+let numerosAsignados = [];
+let adminLogado = false;
+
+// ══════════════════════════════════════════
+//  PERSISTENCIA
+// ══════════════════════════════════════════
+function guardarEstado(){
+  const bVendidos = {};
+  for(const [k,v] of Object.entries(boletos)){
+    if(v.estado==='vendido') bVendidos[k]=v;
+  }
+  localStorage.setItem('s_cfg', JSON.stringify(cfg));
+  localStorage.setItem('s_boletos', JSON.stringify(bVendidos));
+  localStorage.setItem('s_bloq', JSON.stringify([...bloqueados]));
+  localStorage.setItem('s_pass', PASS_ADMIN);
+}
+function cargarEstado(){
+  try{
+    const c=localStorage.getItem('s_cfg'); if(c) cfg={...cfg,...JSON.parse(c)};
+    const b=localStorage.getItem('s_boletos');
+    if(b){ for(const [k,v] of Object.entries(JSON.parse(b))) boletos[k]=v; }
+    const bl=localStorage.getItem('s_bloq'); if(bl) bloqueados=new Set(JSON.parse(bl));
+    const pa=localStorage.getItem('s_pass'); if(pa) PASS_ADMIN=pa;
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+//  INIT / HELPERS
+// ══════════════════════════════════════════
+function total(){ return Math.pow(10,cfg.digitos); }
+function pad(n){ return String(n).padStart(cfg.digitos,'0'); }
+
+function initBoletos(){
+  for(let i=0;i<total();i++){
+    const k=pad(i);
+    if(!boletos[k]) boletos[k]={estado:'disponible',nombre:'',tel:'',email:'',nums:[],fecha:'',pagado:false,comprobante:''};
+  }
+}
+
+// ══════════════════════════════════════════
+//  RENDER GRID
+// ══════════════════════════════════════════
+function renderGrid(){
+  const g=document.getElementById('grid-boletos');
+  const frag=document.createDocumentFragment();
+  for(let i=0;i<total();i++){
+    const k=pad(i);
+    const b=boletos[k];
+    let cls='boleto';
+    const esGanador=esNumGanador(b?.nums||[]);
+    if(bloqueados.has(k)) cls+=' bloqueado';
+    else if(b?.estado==='vendido') cls+= esGanador?' ganador':' vendido';
+    else if(seleccionado===k) cls+=' seleccionado';
+    const btn=document.createElement('button');
+    btn.className=cls; btn.textContent=k; btn.title=k;
+    btn.onclick=()=>seleccionarBoleto(k);
+    frag.appendChild(btn);
+  }
+  g.innerHTML='';
+  g.appendChild(frag);
+}
+
+function esNumGanador(nums){
+  if(!cfg.ganadores||!cfg.ganadores.length) return false;
+  return nums.some(n=>cfg.ganadores.includes(Number(n)));
+}
+
+function seleccionarBoleto(k){
+  if(bloqueados.has(k)||boletos[k]?.estado==='vendido') return;
+  seleccionado = seleccionado===k ? null : k;
+  if(seleccionado) asignarNumeros(k); else numerosAsignados=[];
+  renderGrid();
+  actualizarFormCompra();
+}
+
+function elegirAleatorio(){
+  const disp=[];
+  for(let i=0;i<total();i++){
+    const k=pad(i);
+    if(!bloqueados.has(k)&&boletos[k]?.estado!=='vendido') disp.push(k);
+  }
+  if(!disp.length){alert('No hay boletos disponibles.');return;}
+  seleccionado=disp[Math.floor(Math.random()*disp.length)];
+  asignarNumeros(seleccionado);
+  renderGrid(); actualizarFormCompra();
+  document.querySelector('.boleto.seleccionado')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function asignarNumeros(k){
+  if(cfg.numsPorBoleto===1){numerosAsignados=[parseInt(k,10)];return;}
+  const t=total(), n=Math.min(cfg.numsPorBoleto,t);
+  const used=new Set(), pool=[];
+  while(pool.length<n){const r=Math.floor(Math.random()*t);if(!used.has(r)){used.add(r);pool.push(r);}}
+  pool.sort((a,b)=>a-b);
+  numerosAsignados=pool;
+}
+
+function actualizarFormCompra(){
+  const fc=document.getElementById('form-compra');
+  if(!seleccionado){fc.style.display='none';return;}
+  fc.style.display='block';
+  const nl=cfg.numsPorBoleto===1
+    ?`Número asignado: <strong>${numerosAsignados[0]}</strong>`
+    :`${cfg.numsPorBoleto} números: <strong>${numerosAsignados.join(', ')}</strong>`;
+  document.getElementById('numeros-asignados').innerHTML=
+    `<div class="alert alert-info" style="margin-bottom:14px">Boleto <strong>${seleccionado}</strong> — ${nl}</div>`;
+  // Actualizar datos transferencia
+  document.getElementById('tf-banco').textContent=cfg.banco||'—';
+  document.getElementById('tf-clabe').textContent=cfg.clabe||'—';
+  document.getElementById('tf-titular').textContent=cfg.titular||'—';
+  document.getElementById('tf-monto').textContent=`$${cfg.precio.toLocaleString('es-MX')} MXN`;
+  // Links pago
+  const monto=cfg.precio;
+  document.getElementById('mp-link').href=cfg.mpLink||(cfg.mpLink||'#');
+  document.getElementById('pp-link').href=cfg.ppLink||`#`;
+}
+
+function cancelarSeleccion(){
+  seleccionado=null;numerosAsignados=[];
+  renderGrid();
+  document.getElementById('form-compra').style.display='none';
+}
+
+// ══════════════════════════════════════════
+//  PAGO TABS
+// ══════════════════════════════════════════
+function selectPagoTab(id, btn){
+  document.querySelectorAll('.pago-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.pago-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pago-'+id).classList.add('active');
+}
+
+function registrarPagoMP(){ if(!validarDatosCompra()) return false; }
+function registrarPagoPP(){ if(!validarDatosCompra()) return false; }
+
+// ══════════════════════════════════════════
+//  CONFIRMAR COMPRA → BILLETE
+// ══════════════════════════════════════════
+function validarDatosCompra(){
+  const nombre=document.getElementById('inp-nombre').value.trim();
+  const tel=document.getElementById('inp-tel').value.trim();
+  if(!nombre||!tel){setAlert('alert-compra','Completa nombre y teléfono.','err');return false;}
+  return true;
+}
+
+async function confirmarCompra(){
+  if(!validarDatosCompra()) return;
+  const nombre=document.getElementById('inp-nombre').value.trim();
+  const tel=document.getElementById('inp-tel').value.trim();
+  const email=document.getElementById('inp-email').value.trim();
+  const k=seleccionado;
+  const fecha=new Date().toLocaleString('es-MX');
+  boletos[k]={estado:'vendido',nombre,tel,email,nums:[...numerosAsignados],fecha,pagado:false,comprobante:''};
+  guardarEstado(); renderGrid(); renderStats();
+  if(adminLogado) renderAdmin();
+  document.getElementById('inp-nombre').value='';
+  document.getElementById('inp-tel').value='';
+  document.getElementById('inp-email').value='';
+  seleccionado=null; numerosAsignados=[];
+  document.getElementById('form-compra').style.display='none';
+  setAlert('alert-compra','','');
+  // Mostrar billete inmediatamente
+  mostrarBillete(k);
+  await enviarSheets({accion:'venta',boleto:k,nombre,tel,email,nums:boletos[k].nums.join(', '),fecha});
+}
+
+// ══════════════════════════════════════════
+//  BILLETE MODAL
+// ══════════════════════════════════════════
+function mostrarBillete(k){
+  const b=boletos[k];
+  if(!b||b.estado!=='vendido'){setAlert('alert-buscar','Boleto no registrado o no vendido.','err');return;}
+  const esGan=esNumGanador(b.nums||[]);
+  document.getElementById('blt-sorteo-nombre').textContent=(cfg.nombre||'SORTEO').toUpperCase();
+  document.getElementById('blt-header-sub').textContent='Comprobante de participación';
+  document.getElementById('blt-num-grande').textContent=k;
+  // Números
+  const numsDiv=document.getElementById('blt-nums');
+  numsDiv.innerHTML=(b.nums||[]).map(n=>{
+    const esG=cfg.ganadores&&cfg.ganadores.includes(Number(n));
+    return `<div class="billete-num${esG?' ganador-num':''}">${String(n).padStart(cfg.digitos,'0')}</div>`;
+  }).join('');
+  document.getElementById('blt-nombre').textContent=b.nombre;
+  document.getElementById('blt-total').textContent=`$${cfg.precio.toLocaleString('es-MX')} MXN`;
+  document.getElementById('blt-fecha').textContent=b.fecha;
+  // Fecha sorteo
+  let fs='Por definir';
+  if(cfg.fechaSorteo){
+    const d=new Date(cfg.fechaSorteo+'T12:00:00');
+    fs=d.toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  document.getElementById('blt-fecha-sorteo').innerHTML=
+    `${fs}<br><span style="font-size:11px;font-weight:400;color:var(--text-muted)">${cfg.notaFecha||''}</span>`;
+  // Status pago
+  document.getElementById('blt-status-pago').innerHTML=b.pagado
+    ?'<div class="billete-status-pagado">✅ Pago confirmado</div>'
+    :'<div class="billete-status-pendiente">⏳ Pago pendiente de confirmación</div>';
+  // Ganador
+  const ganDiv=document.getElementById('blt-status-ganador');
+  if(cfg.ganadores&&cfg.ganadores.length>0){
+    ganDiv.innerHTML=esGan
+      ?'<div class="billete-status-ganador">🏆 ¡BOLETO GANADOR!</div>'
+      :'<div style="margin-top:8px;font-size:12px;color:var(--text-muted)">Este boleto no resultó ganador</div>';
+  } else ganDiv.innerHTML='';
+  // Comprobante
+  const cw=document.getElementById('blt-comprobante-wrap');
+  const ci=document.getElementById('blt-comprobante-img');
+  if(b.comprobante){cw.style.display='block';ci.src=b.comprobante;}
+  else cw.style.display='none';
+  document.getElementById('billete-modal').style.display='flex';
+}
+
+function cerrarBillete(e){
+  if(e.target.id==='billete-modal') cerrarBilleteDirecto();
+}
+function cerrarBilleteDirecto(){
+  document.getElementById('billete-modal').style.display='none';
+}
+function imprimirBillete(){
+  const inner=document.getElementById('billete-inner').innerHTML;
+  const w=window.open('','_blank','width=500,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><title>Billete</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>body{font-family:'DM Sans',sans-serif;margin:0;padding:20px;background:#fff}
+    *{box-sizing:border-box}
+    .billete-header{background:linear-gradient(135deg,#534AB7,#3C3489);color:#fff;padding:20px 24px 16px;text-align:center;border-radius:16px 16px 0 0}
+    .billete-header-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800}
+    .billete-numero-grande{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;line-height:1;margin:12px 0 4px}
+    .billete-body{padding:20px 24px;border:1px solid #D3D1C7;border-top:none}
+    .billete-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #D3D1C7;font-size:13px}
+    .billete-row:last-child{border-bottom:none}
+    .billete-row-label{color:#666;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.05em}
+    .billete-row-val{font-family:'Syne',sans-serif;font-weight:700;text-align:right}
+    .billete-nums{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+    .billete-num{width:32px;height:32px;border-radius:8px;background:#EEEDFE;color:#3C3489;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .billete-footer{padding:14px 24px 20px;text-align:center;border:1px solid #D3D1C7;border-top:1px dashed #D3D1C7;border-radius:0 0 16px 16px}
+    .billete-status-pagado{background:#E1F5EE;color:#085041;border:1px solid #5DCAA5;border-radius:10px;padding:8px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;display:inline-block}
+    .billete-status-pendiente{background:#FAEEDA;color:#633806;border:1px solid #FAC775;border-radius:10px;padding:8px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;display:inline-block}
+    .billete-close{display:none}
+    .billete-actions{display:none}
+    img{max-width:100%;border-radius:8px}
+    </style></head><body>${inner}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),600);
+}
+
+// ══════════════════════════════════════════
+//  BUSCAR BOLETO
+// ══════════════════════════════════════════
+function buscarBoleto(){
+  const val=document.getElementById('inp-buscar').value.trim();
+  if(!val){setAlert('alert-buscar','Ingresa un número.','err');return;}
+  // Buscar por número de boleto
+  const k=val.padStart(cfg.digitos,'0');
+  if(boletos[k]&&boletos[k].estado==='vendido'){
+    mostrarBillete(k);
+    setAlert('alert-buscar','','');
+    return;
+  }
+  // Buscar por número del sorteo asignado
+  const num=parseInt(val,10);
+  const encontrado=Object.entries(boletos).find(([,b])=>b.estado==='vendido'&&(b.nums||[]).includes(num));
+  if(encontrado){
+    mostrarBillete(encontrado[0]);
+    setAlert('alert-buscar','','');
+    return;
+  }
+  setAlert('alert-buscar','No se encontró ningún boleto con ese número.','err');
+}
+
+// ══════════════════════════════════════════
+//  STATS
+// ══════════════════════════════════════════
+function renderStats(){
+  const tot=total();
+  const vend=Object.values(boletos).filter(b=>b.estado==='vendido').length;
+  const libres=tot-vend-bloqueados.size;
+  document.getElementById('stats-publico').innerHTML=`
+    <div class="stat"><div class="stat-label">Disponibles</div><div class="stat-val">${libres.toLocaleString('es-MX')}</div></div>
+    <div class="stat"><div class="stat-label">Vendidos</div><div class="stat-val">${vend.toLocaleString('es-MX')}</div></div>
+    <div class="stat"><div class="stat-label">Total boletos</div><div class="stat-val">${tot.toLocaleString('es-MX')}</div></div>
+  `;
+  if(adminLogado){
+    const pag=Object.values(boletos).filter(b=>b.estado==='vendido'&&b.pagado).length;
+    document.getElementById('stats-admin').innerHTML=`
+      <div class="stat"><div class="stat-label">Vendidos</div><div class="stat-val">${vend.toLocaleString('es-MX')}</div></div>
+      <div class="stat"><div class="stat-label">Pagados</div><div class="stat-val" style="color:var(--teal)">${pag}</div></div>
+      <div class="stat"><div class="stat-label">Pendientes</div><div class="stat-val" style="color:var(--amber)">${vend-pag}</div></div>
+      <div class="stat"><div class="stat-label">Recaudado</div><div class="stat-val">$${(pag*cfg.precio).toLocaleString('es-MX')}</div></div>
+      <div class="stat"><div class="stat-label">Bloqueados</div><div class="stat-val">${bloqueados.size}</div></div>
+    `;
+  }
+}
+
+// ══════════════════════════════════════════
+//  ADMIN RENDER
+// ══════════════════════════════════════════
+function renderAdmin(){
+  renderStats();
+  const vendidos=Object.entries(boletos).filter(([,b])=>b.estado==='vendido');
+  document.getElementById('tbody-vendidos').innerHTML=vendidos.length===0
+    ?'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px">Sin ventas aún</td></tr>'
+    :vendidos.map(([k,b])=>`
+      <tr>
+        <td><strong>${k}</strong></td>
+        <td><span class="badge badge-morado" style="font-size:10px">${(b.nums||[]).join(', ')}</span></td>
+        <td>${b.nombre}<br><span style="font-size:11px;color:var(--text-muted)">${b.tel}</span></td>
+        <td>
+          <label class="toggle-pago" style="cursor:pointer;display:flex;align-items:center;gap:6px;font-size:12px">
+            <input type="checkbox" ${b.pagado?'checked':''} onchange="togglePago('${k}',this.checked)" style="width:auto;padding:0">
+            <span>${b.pagado?'<span class="badge badge-verde">Pagado</span>':'<span class="badge badge-amarillo">Pendiente</span>'}</span>
+          </label>
+        </td>
+        <td>${esNumGanador(b.nums||[])?'<span class="badge badge-dorado">🏆 Ganador</span>':'<span class="badge badge-gris">—</span>'}</td>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="mostrarBillete('${k}')">🎟 Ver</button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+              📎 <input type="file" accept="image/*" style="display:none" onchange="subirComprobante('${k}',this)">
+            </label>
+            <button class="btn btn-danger btn-sm" onclick="eliminarVenta('${k}')">✕</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  document.getElementById('count-bloqueados').textContent=bloqueados.size;
+  document.getElementById('lista-bloqueados').innerHTML=[...bloqueados].map(k=>
+    `<span class="badge badge-gris">${k} <span style="cursor:pointer;margin-left:3px" onclick="desbloquearEspecifico('${k}')">×</span></span>`
+  ).join('');
+  loadConfigUI();
+  renderGanadoresList();
+}
+
+function loadConfigUI(){
+  document.getElementById('cfg-nombre').value=cfg.nombre;
+  document.getElementById('cfg-precio').value=cfg.precio;
+  document.getElementById('cfg-digitos').value=cfg.digitos;
+  document.getElementById('cfg-nums-por-boleto').value=cfg.numsPorBoleto;
+  document.getElementById('cfg-sheets-url').value=cfg.sheetsUrl;
+  document.getElementById('cfg-banco').value=cfg.banco||'';
+  document.getElementById('cfg-clabe').value=cfg.clabe||'';
+  document.getElementById('cfg-titular').value=cfg.titular||'';
+  document.getElementById('cfg-mp-link').value=cfg.mpLink||'';
+  document.getElementById('cfg-pp-link').value=cfg.ppLink||'';
+  document.getElementById('cfg-fecha-sorteo').value=cfg.fechaSorteo||'';
+  document.getElementById('cfg-nota-fecha').value=cfg.notaFecha||'';
+  if(cfg.ganadores&&cfg.ganadores.length)
+    document.getElementById('cfg-ganadores').value=cfg.ganadores.join(', ');
+}
+
+// ══════════════════════════════════════════
+//  COMPROBANTE
+// ══════════════════════════════════════════
+function subirComprobante(k, input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    boletos[k].comprobante=e.target.result;
+    boletos[k].pagado=true;
+    guardarEstado();renderAdmin();
+    enviarSheets({accion:'comprobante',boleto:k,fecha:new Date().toLocaleString('es-MX')});
+  };
+  reader.readAsDataURL(file);
+}
+
+function togglePago(k, val){
+  boletos[k].pagado=val;
+  guardarEstado();renderAdmin();
+  enviarSheets({accion:'pago',boleto:k,pagado:val,fecha:new Date().toLocaleString('es-MX')});
+}
+
+// ══════════════════════════════════════════
+//  GANADORES
+// ══════════════════════════════════════════
+function guardarGanadores(){
+  const raw=document.getElementById('cfg-ganadores').value.trim();
+  if(!raw){setAlert('alert-ganadores','Ingresa al menos un número ganador.','err');return;}
+  cfg.ganadores=raw.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+  guardarEstado();renderGrid();renderAdmin();
+  setAlert('alert-ganadores',`✅ ${cfg.ganadores.length} número(s) ganador(es) publicados.`,'ok');
+  enviarSheets({accion:'resultado',ganadores:cfg.ganadores.join(', '),fecha:new Date().toLocaleString('es-MX')});
+}
+
+function renderGanadoresList(){
+  const div=document.getElementById('ganadores-lista');
+  if(!cfg.ganadores||!cfg.ganadores.length){div.innerHTML='';return;}
+  div.innerHTML=cfg.ganadores.map(n=>`<div class="gan-num">${String(n).padStart(cfg.digitos,'0')}</div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+function guardarConfig(){
+  const nuevaPass=document.getElementById('cfg-pass-nueva').value.trim();
+  if(nuevaPass) PASS_ADMIN=nuevaPass;
+  const nuevoDigitos=parseInt(document.getElementById('cfg-digitos').value);
+  const cambio=nuevoDigitos!==cfg.digitos;
+  cfg.nombre=document.getElementById('cfg-nombre').value||'Sorteo';
+  cfg.precio=parseInt(document.getElementById('cfg-precio').value)||100;
+  cfg.digitos=nuevoDigitos;
+  cfg.numsPorBoleto=Math.min(parseInt(document.getElementById('cfg-nums-por-boleto').value)||1,total());
+  cfg.sheetsUrl=document.getElementById('cfg-sheets-url').value.trim();
+  cfg.banco=document.getElementById('cfg-banco').value.trim();
+  cfg.clabe=document.getElementById('cfg-clabe').value.trim();
+  cfg.titular=document.getElementById('cfg-titular').value.trim();
+  cfg.mpLink=document.getElementById('cfg-mp-link').value.trim();
+  cfg.ppLink=document.getElementById('cfg-pp-link').value.trim();
+  cfg.fechaSorteo=document.getElementById('cfg-fecha-sorteo').value;
+  cfg.notaFecha=document.getElementById('cfg-nota-fecha').value.trim();
+  if(cambio){boletos={};bloqueados=new Set();seleccionado=null;}
+  initBoletos();
+  document.getElementById('sorteo-nombre').textContent=cfg.nombre;
+  document.getElementById('sorteo-sub').textContent=`$${cfg.precio.toLocaleString('es-MX')} por boleto · ${cfg.numsPorBoleto} número${cfg.numsPorBoleto>1?'s':''} por boleto`;
+  document.title=cfg.nombre+' — Sorteo';
+  guardarEstado();renderGrid();renderStats();renderAdmin();
+  setAlert('alert-cfg',cambio?'✅ Guardado. Boletos reiniciados.':'✅ Configuración guardada.','ok');
+}
+
+async function probarSheets(){
+  if(!cfg.sheetsUrl){setAlert('alert-cfg','Ingresa la URL primero.','err');return;}
+  setAlert('alert-cfg','Enviando prueba...','info');
+  await enviarSheets({accion:'test',fecha:new Date().toLocaleString('es-MX')});
+  setAlert('alert-cfg','✅ Solicitud enviada. Revisa tu hoja de Google.','ok');
+}
+
+function reiniciarTodo(){
+  if(!confirm('⚠️ ¿Reiniciar TODOS los boletos, ventas y configuración? Esto no se puede deshacer.')) return;
+  boletos={};bloqueados=new Set();seleccionado=null;cfg.ganadores=[];
+  localStorage.clear();
+  initBoletos();renderGrid();renderStats();renderAdmin();
+  setAlert('alert-cfg','Todo reiniciado.','warn');
+}
+
+// ══════════════════════════════════════════
+//  BLOQUEOS
+// ══════════════════════════════════════════
+function bloquearBoleto(){
+  const n=document.getElementById('inp-bloqueo-num').value.trim().padStart(cfg.digitos,'0');
+  if(!boletos[n]){setAlert('alert-bloqueo','Número no existe.','err');return;}
+  if(boletos[n].estado==='vendido'){setAlert('alert-bloqueo','Ese boleto ya está vendido.','err');return;}
+  bloqueados.add(n);guardarEstado();renderGrid();renderAdmin();
+  setAlert('alert-bloqueo',`Boleto ${n} bloqueado.`,'ok');
+  enviarSheets({accion:'bloqueo',boleto:n,fecha:new Date().toLocaleString('es-MX')});
+}
+function desbloquearBoleto(){
+  const n=document.getElementById('inp-bloqueo-num').value.trim().padStart(cfg.digitos,'0');
+  if(!bloqueados.has(n)){setAlert('alert-bloqueo','Ese boleto no está bloqueado.','err');return;}
+  bloqueados.delete(n);guardarEstado();renderGrid();renderAdmin();
+  setAlert('alert-bloqueo',`Boleto ${n} restaurado.`,'ok');
+}
+function desbloquearEspecifico(k){bloqueados.delete(k);guardarEstado();renderGrid();renderAdmin();}
+
+function eliminarVenta(k){
+  if(!confirm(`¿Cancelar venta del boleto ${k}?`)) return;
+  boletos[k]={estado:'disponible',nombre:'',tel:'',email:'',nums:[],fecha:'',pagado:false,comprobante:''};
+  guardarEstado();renderGrid();renderAdmin();
+  enviarSheets({accion:'cancelacion',boleto:k,fecha:new Date().toLocaleString('es-MX')});
+}
+
+// ══════════════════════════════════════════
+//  SHEETS
+// ══════════════════════════════════════════
+async function enviarSheets(data){
+  if(!cfg.sheetsUrl) return;
+  try{
+    await fetch(cfg.sheetsUrl,{method:'POST',mode:'no-cors',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});
+    if(adminLogado) document.getElementById('sheets-status').innerHTML=
+      `<div class="alert alert-ok">✅ Último envío: ${new Date().toLocaleTimeString('es-MX')} — ${data.accion}</div>`;
+  }catch(e){
+    if(adminLogado) document.getElementById('sheets-status').innerHTML=
+      `<div class="alert alert-err">❌ Error al conectar con Sheets.</div>`;
+  }
+}
+
+// ══════════════════════════════════════════
+//  EXPORT CSV
+// ══════════════════════════════════════════
+function exportarCSV(){
+  const vend=Object.entries(boletos).filter(([,b])=>b.estado==='vendido');
+  if(!vend.length) return;
+  const rows=[['Boleto','Números','Nombre','Teléfono','Correo','Fecha','Pagado','Ganador']];
+  vend.forEach(([k,b])=>rows.push([
+    k,(b.nums||[]).join(' | '),b.nombre,b.tel,b.email||'',b.fecha,b.pagado?'Sí':'No',
+    esNumGanador(b.nums||[])?'Sí':'No'
+  ]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`sorteo_${cfg.nombre.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════
+//  LOGIN / NAV
+// ══════════════════════════════════════════
+function loginAdmin(){
+  if(document.getElementById('inp-pass').value===PASS_ADMIN){
+    adminLogado=true;
+    document.getElementById('admin-login').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+    renderAdmin();
+  } else setAlert('alert-login','Contraseña incorrecta.','err');
+}
+function logoutAdmin(){
+  adminLogado=false;
+  document.getElementById('admin-login').style.display='block';
+  document.getElementById('admin-panel').style.display='none';
+  document.getElementById('inp-pass').value='';
+}
+function showPage(p){
+  ['publico','buscar','admin'].forEach(id=>{
+    document.getElementById('page-'+id).style.display=id===p?'block':'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active',i===['publico','buscar','admin'].indexOf(p)));
+}
+function setAlert(id,msg,type){
+  const el=document.getElementById(id);
+  if(!el) return;
+  if(!msg){el.innerHTML='';return;}
+  const cls={ok:'alert-ok',err:'alert-err',info:'alert-info',warn:'alert-warn'}[type]||'alert-info';
+  el.innerHTML=`<div class="alert ${cls}">${msg}</div>`;
+}
+
+// ══════════════════════════════════════════
+//  ARRANQUE
+// ══════════════════════════════════════════
+cargarEstado();
+initBoletos();
+renderGrid();
+renderStats();
+document.getElementById('sorteo-nombre').textContent=cfg.nombre;
+document.getElementById('sorteo-sub').textContent=`$${cfg.precio.toLocaleString('es-MX')} por boleto · ${cfg.numsPorBoleto} número${cfg.numsPorBoleto>1?'s':''} por boleto`;
+document.title=cfg.nombre+' — Sorteo';
+</script>
+</body>
+</html>
